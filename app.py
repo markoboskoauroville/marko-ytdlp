@@ -108,10 +108,10 @@ destination = st.radio(
 col1, col2 = st.columns(2)
 with col1:
     format_choice = st.selectbox("Format", [
+        "Best single-file (no ffmpeg)",
         "Best video+audio (mp4)",
         "Audio only (mp3)",
         "Audio only (m4a)",
-        "Best video (no merge)",
         "Worst (smallest file)",
     ])
 with col2:
@@ -174,20 +174,25 @@ if st.button("🚀 Download", type="primary", use_container_width=True):
 
     try:
         fmt_map = {
-            "Best video+audio (mp4)": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "Audio only (mp3)":       "bestaudio/best",
+            "Best video+audio (mp4)": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best[ext=mp4]/best",
+            "Audio only (mp3)":       "bestaudio[ext=mp3]/bestaudio[ext=m4a]/bestaudio/best",
             "Audio only (m4a)":       "bestaudio[ext=m4a]/bestaudio/best",
-            "Best video (no merge)":  "best",
+            "Best single-file (no ffmpeg)": "best",
             "Worst (smallest file)":  "worst",
         }
 
         ydl_opts = {
-            "format":      fmt_map[format_choice],
-            "outtmpl":     os.path.join(tmpdir, "%(title)s.%(ext)s"),
-            "quiet":       True,
-            "no_warnings": True,
+            "format":               fmt_map[format_choice],
+            "outtmpl":              os.path.join(tmpdir, "%(title)s.%(ext)s"),
+            "quiet":                True,
+            "no_warnings":          True,
+            "merge_output_format":  "mp4",
+            # if ffmpeg is missing, fall back to best single-file format instead of crashing
+            "ignoreerrors":         False,
+            "abort_on_error":       False,
         }
 
+        # only attempt ffmpeg postprocessing if not a no-merge choice
         if format_choice == "Audio only (mp3)":
             ydl_opts["postprocessors"] = [{
                 "key": "FFmpegExtractAudio",
